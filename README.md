@@ -22,5 +22,4 @@ The game retrieves country data using a REST API and provides feedback about the
 
 ### 3. Web Interface
 
-- **React.js + Vite**# Guess-the-Country-Game
-# Guess-the-Country-Game
+- **React.js + Vite**
