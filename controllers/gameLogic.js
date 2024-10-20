@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const populationTreshold = 10000000;
 let countriesCache = null
 
 async function getCountries() {
@@ -14,6 +15,7 @@ async function getCountries() {
                 area: country.area,
                 latitude: country.latlng[0],
                 longitude: country.latlng[1],
+                unMember: country.unMember
             }));
             countriesCache = countries;
         } catch (error) {
@@ -34,9 +36,11 @@ async function getRandomCountryByDifficulty(difficulty) {
     
     let filteredCountries;
     if (difficulty === 'EASY') {
-        filteredCountries = countries.filter(country => country.population > 50000000);
-    } else { (difficulty === 'HARD') 
-        filteredCountries = countries
+        filteredCountries = countries.filter(country => (country.population > populationTreshold && country.unMember === true));
+    } else if (difficulty === 'HARD') {
+        filteredCountries = countries.filter(country => country.unMember === true);
+    } else if (difficulty === 'EXPERT') {   
+        filteredCountries = countries;
     }
     return filteredCountries[Math.floor(Math.random() * filteredCountries.length)];
 }
