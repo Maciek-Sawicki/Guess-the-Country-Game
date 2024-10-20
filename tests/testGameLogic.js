@@ -1,5 +1,13 @@
-const { getCountries, getRandomCountry } = require('../controllers/gameLogic');
-const { comparePopulation, compareContinent, compareArea, compareLocation } = require('../controllers/gameLogic');
+import { 
+  getCountries, 
+  getRandomCountry, 
+  getRandomCountryByDifficulty, 
+  comparePopulation, 
+  compareContinent, 
+  compareArea, 
+  compareLocation, 
+  getFeedback 
+} from '../controllers/gameLogic.js';
 
 async function testGetCountries() {
   try {
@@ -18,6 +26,16 @@ async function testGetRandomCountry() {
         console.error('Błąd podczas testowania losowego kraju:', error); // Obsłuż błąd
     }
 }
+
+async function testGetRandomCountryByDifficulty(difficulty) {
+  try {
+      const randomCountry = await getRandomCountryByDifficulty(difficulty); // Poczekaj na wynik
+      console.log(randomCountry); // Wyświetl wylosowany kraj
+  } catch (error) {
+      console.error('Błąd podczas testowania losowego kraju:', error); // Obsłuż błąd
+  }
+}
+
 
 //testGetCountries();
 
@@ -42,7 +60,6 @@ async function startGame() {
     console.log(compareLocation(userGuess, targetCountry));
 }
 
-const { getFeedback } = require('../controllers/gameLogic'); // Importujemy funkcję getFeedback
 
 async function checkGuess(userGuess, targetCountry) {
     console.log(userGuess);
@@ -78,28 +95,24 @@ async function checkGuess(userGuess, targetCountry) {
 }
 
 async function main() {
-const userGuess = await getRandomCountry();
-//const targetCountry = await getRandomCountry();
+// const userGuess = await getRandomCountry();
+// //const targetCountry = await getRandomCountry();
 
-const targetCountry = {
-  name: 'Germany',  
-  population: 83000000,
-  area: 357022,
-  continent: 'Europe',
-  latitude: 51.1657,
-  longitude: 10.4515
-};
+// const targetCountry = {
+//   name: 'Germany',  
+//   population: 83000000,
+//   area: 357022,
+//   continent: 'Europe',
+//   latitude: 51.1657,
+//   longitude: 10.4515
+// };
 
-const result = await checkGuess(userGuess, targetCountry);
-console.log(result);
+// const result = await checkGuess(userGuess, targetCountry);
+// console.log(result);
+
+
+getRandomCountryByDifficulty('EXPERT');
+//console.log(country);
 }
 
 main();
-
-
-
-
-
-//startGame();
-
-//testGetRandomCountry();
