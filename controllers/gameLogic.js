@@ -1,9 +1,9 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const populationTreshold = 10000000;
 let countriesCache = null
 
-async function getCountries() {
+export const getCountries = async () => {
     if (!countriesCache) {
         try {
             const response = await axios.get('https://restcountries.com/v3.1/all');
@@ -24,17 +24,17 @@ async function getCountries() {
         }
     }
     return countriesCache;
-}
+};
 
-async function getRandomCountry() {
+export const getRandomCountry = async () => {
     const countries = await getCountries(); 
     return countries[Math.floor(Math.random() * countries.length)];
-}
+};
 
-async function getRandomCountryByDifficulty(difficulty) {
+export const getRandomCountryByDifficulty = async (difficulty) => {
     const countries = await getCountries();
     
-    let filteredCountries;
+    let filteredCountries = [];
     if (difficulty === 'EASY') {
         filteredCountries = countries.filter(country => (country.population > populationTreshold && country.unMember === true));
     } else if (difficulty === 'HARD') {
@@ -43,13 +43,13 @@ async function getRandomCountryByDifficulty(difficulty) {
         filteredCountries = countries;
     }
     return filteredCountries[Math.floor(Math.random() * filteredCountries.length)];
-}
+};
 
-function checkGuess(userGuess, targetCountry) {
+export const checkGuess = (userGuess, targetCountry) => {
     return userGuess.toLowerCase() === targetCountry.name.toLowerCase();
-}
+};
 
-function comparePopulation(userGuess, targetCountry) {
+export const comparePopulation = (userGuess, targetCountry) => {
     const populationDiff = Math.abs(targetCountry.population - userGuess.population);
 
     if (populationDiff < 1000000) {
@@ -59,17 +59,17 @@ function comparePopulation(userGuess, targetCountry) {
     } else {
         return "LESS";
     }
-}
+};
 
-function compareContinent(userGuess, targetCountry) {
+export const compareContinent = (userGuess, targetCountry) => {
     if (userGuess.continent === targetCountry.continent) {
         return 'MATCH';
     } else {
         return "DIFFERENT";
     }
-}
+};
 
-function compareArea(userGuess, targetCountry) {
+export const compareArea = (userGuess, targetCountry) => {
     const areaDiff = Math.abs(targetCountry.area - userGuess.area);
 
     if (areaDiff < 50000) {
@@ -79,9 +79,9 @@ function compareArea(userGuess, targetCountry) {
     } else {
         return "LESS";
     }
-}
+};
 
-function compareLocation(userGuess, targetCountry) {
+export const compareLocation = (userGuess, targetCountry) => {
     const latitudeDiff = targetCountry.latitude - userGuess.latitude;
     const longitudeDiff = targetCountry.longitude - userGuess.longitude;
 
@@ -107,9 +107,9 @@ function compareLocation(userGuess, targetCountry) {
     }
 
     return { latitudeHint, longitudeHint };
-}
+};
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
+export const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -120,14 +120,14 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
     const distance = R * c; // distance in kilometers
     return distance;
-}
+};
 
-function compareDistance(userGuess, targetCountry) {
+export const compareDistance = (userGuess, targetCountry) => {
     const distance = calculateDistance(userGuess.latitude, userGuess.longitude, targetCountry.latitude, targetCountry.longitude);
     return { distance };
-}
+};
 
-function getFeedback(userGuess, targetCountry) {
+export const getFeedback = (userGuess, targetCountry) => {
     const population = comparePopulation(userGuess, targetCountry);
     const area = compareArea(userGuess, targetCountry);
     const continent = compareContinent(userGuess, targetCountry);
@@ -142,10 +142,10 @@ function getFeedback(userGuess, targetCountry) {
         distance
     }
 
-    return feedback
-}
+    return feedback;
+};
 
-module.exports = {
+export default {
     getCountries,
     getRandomCountry,
     getRandomCountryByDifficulty,
