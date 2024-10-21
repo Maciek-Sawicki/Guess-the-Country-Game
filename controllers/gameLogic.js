@@ -26,6 +26,11 @@ export const getCountries = async () => {
     return countriesCache;
 };
 
+export const getCountryByName = async (countryName) => {
+    const countries = await getCountries();
+    return countries.find(country => country.name.toLowerCase() === countryName.toLowerCase());
+};
+
 export const getRandomCountry = async () => {
     const countries = await getCountries(); 
     return countries[Math.floor(Math.random() * countries.length)];
@@ -46,15 +51,20 @@ export const getRandomCountryByDifficulty = async (difficulty) => {
 };
 
 export const checkGuess = (userGuess, targetCountry) => {
+    console.log('userGuess:', userGuess); // Dodaj log
+    console.log('targetCountry:', targetCountry); // Dodaj log
+    
+
     return userGuess.toLowerCase() === targetCountry.name.toLowerCase();
 };
+
 
 export const comparePopulation = (userGuess, targetCountry) => {
     const populationDiff = Math.abs(targetCountry.population - userGuess.population);
 
     if (populationDiff < 1000000) {
         return 'EQUAL';
-    } else if (userGuess.population > targetCountry.population) {
+    } else if (userGuess.population < targetCountry.population) {
         return 'GREATER';
     } else {
         return "LESS";
@@ -74,7 +84,7 @@ export const compareArea = (userGuess, targetCountry) => {
 
     if (areaDiff < 50000) {
         return 'EQUAL';
-    } else if (userGuess.area > targetCountry.area) {
+    } else if (userGuess.area < targetCountry.area) {
         return 'GREATER';
     } else {
         return "LESS";
