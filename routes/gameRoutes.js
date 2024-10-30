@@ -35,7 +35,6 @@ router.get('/random-country/:difficulty', async (req, res) => {
 });
 
 router.post('/start-game', async (req, res) => {
-
     const { difficulty } = req.body;
 
     if (!['EASY', 'HARD', 'EXPERT'].includes(difficulty)) {
@@ -46,84 +45,97 @@ router.post('/start-game', async (req, res) => {
 
     try {
         const randomCountry = await gameLogic.getRandomCountryByDifficulty(difficulty);
-        
-        console.log(randomCountry);
 
         if (!randomCountry)     {
             return res.status(404).json({ error: 'No country found' });
         }
 
+        console.log('Target country: ', randomCountry.name);
+
         req.session.targetCountry = randomCountry;
         req.session.attempts = 0; 
 
-        res.json({ message: 'Game started!', targetCountry: req.session.targetCountry , attempts:req.session.attempts});
+        console.log('Session after starting game:', req.session);
+
+        req.session.save(err => {
+            if (err) console.error('Session save error:', err);
+            res.json({
+                message: 'Game started!',
+                targetCountry: req.session.targetCountry,
+                attempts: req.session.attempts
+            });
+        });
+        
     } catch (error) {
         console.error('Error starting game:', error);
         res.status(500).json({ error: 'Failed to start game' });
     }
 });
 
+router.get('/session-data', (req, res) => {
+    if (!req.session.targetCountry || typeof req.session.attempts === 'undefined') {
+        return res.status(404).json({ error: 'Session data not found' });
+    }
+
+    res.json({
+        targetCountry: req.session.targetCountry,
+        attempts: req.session.attempts,
+    });
+});
+
 router.post('/guess', async (req, res) => {
 
+    if (!req.session.targetCountry) {
+        return res.status(400).json({ error: 'Start game first!' });
+    }
+
     const targetCountry = req.session.targetCountry;
-    console.log('Target country in session:', targetCountry); // Logowanie dla debugowania
-
-
     const { userGuess } = req.body;
 
-    
-    //const userGuess = 'Syria';
+    console.log(req.session);
 
-    //const targetCountry = req.session.targetCountry;
 
-    console.log('Sesja podczas zgadywania:', req.session);
-
-    if (!targetCountry) {
-        return res.status(400).json({ error: 'Najpierw rozpocznij grę!' });
-    }
 
     try {
         if (!req.session.attempts) {
-            req.session.attempts = 0; // Upewnij się, że attempts jest zainicjowane
+            req.session.attempts = 0; 
         }
         req.session.attempts += 1;
 
-        console.log("USERGUESS", userGuess);
-        console.log("TARGETCOUNTRY", targetCountry);
-
         const fullCountryData = await gameLogic.getCountryByName(userGuess);
         if (!fullCountryData) {
-            console.log("Nie znaleziono kraju o nazwie:", userGuess);
-            return null; // lub inna obsługa błędu
+            console.log("Failed to find country with this name:", userGuess);
+            return null; 
         }
 
-        const isCorrect = gameLogic.checkGuess(userGuess, targetCountry);
+        console.log("User guess: ", fullCountryData);
+
+        const isCorrect = gameLogic.checkGuess(fullCountryData, targetCountry);
 
         if (isCorrect) {
-            return res.json({ message: 'Wygrałeś szefie', attempts: req.session.attempts });
+            return res.json({
+                message: `You won Boss! Correct country is ${targetCountry.name}`,
+                attempts: req.session.attempts 
+            });
         } else {
             const feedback = gameLogic.getFeedback(fullCountryData, targetCountry);
             return res.json({ feedback, attempts: req.session.attempts });
         }
     } catch (error) {
-        console.error('Błąd podczas sprawdzania odpowiedzi:', error);
-        return res.status(500).json({ error: 'Błąd podczas sprawdzania odpowiedzi' });
-    }
+        console.error('Error while checking the answer:', error);
+        return res.status(500).json({ error: 'Error while checking the answer' });
+    }    
 });
-
 
 router.post('/restart-game', (req, res) => {
     try {
-        req.session.targetCountry = null; // Zresetuj cel gry
-        req.session.attempts = 0; // Zresetuj liczbę prób
-        res.json({ message: 'Gra została zrestartowana' });
+        req.session.targetCountry = null; 
+        req.session.attempts = 0; 
+        res.json({ message: 'Game restarted' });
     } catch (error) {
-        res.status(500).json({ error: 'Błąd podczas restartowania gry' });
+        res.status(500).json({ error: 'Error while restarting the game' });
     }
 });
-
-
-
 
 router.post('/feedback', async (req, res) => {
     const { userGuess, targetCountry } = req.body;

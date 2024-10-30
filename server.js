@@ -6,16 +6,17 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.use(session({
-  secret: 'your-secret-key', // Zmień na bezpieczny sekret w produkcji
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-      secure: false, // Ustaw na true, jeśli używasz HTTPS
-      httpOnly: true,
-      maxAge: 3600000, // Czas życia sesji w milisekundach
-  },
-}));
+app.use(
+  session({
+      secret: 'key', 
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+          secure: false, 
+          maxAge: 24 * 60 * 60 * 1000 
+      }
+  })
+);
 
 app.use('/api', gameRoutes); 
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const populationTreshold = 10000000;
+const populationTreshold = 100000000;
 let countriesCache = null
 
 export const getCountries = async () => {
@@ -51,11 +51,7 @@ export const getRandomCountryByDifficulty = async (difficulty) => {
 };
 
 export const checkGuess = (userGuess, targetCountry) => {
-    console.log('userGuess:', userGuess); // Dodaj log
-    console.log('targetCountry:', targetCountry); // Dodaj log
-    
-
-    return userGuess.toLowerCase() === targetCountry.name.toLowerCase();
+    return userGuess.name.toLowerCase() === targetCountry.name.toLowerCase();
 };
 
 
