@@ -3,23 +3,23 @@ import axios from 'axios';
 import chalk from 'chalk';
 import figlet from 'figlet';
 
-
 const apiUrl = 'http://localhost:3000/api';
+let sessionCookie = '';
 
 const axiosInstance = axios.create({
     baseURL: apiUrl,
-    withCredentials: true, // Umożliwia wysyłanie cookies
+    withCredentials: true, 
 });
 
-axiosInstance.interceptors.request.use(request => {
-    //console.log('Starting Request', request);
-    return request;
-});
+// axiosInstance.interceptors.request.use(request => {
+//     console.log('Starting Request', request);
+//     return request;
+// });
 
-axiosInstance.interceptors.response.use(response => {
-    //console.log('Response:', response);
-    return response;
-});
+// axiosInstance.interceptors.response.use(response => {
+//     console.log('Response:', response);
+//     return response;
+// });
 
 
 const chooseDifficulty = async () => {
@@ -28,13 +28,12 @@ const chooseDifficulty = async () => {
             type: 'list',
             name: 'difficulty',
             message: 'Choose difficulty level:',
-            choices: ['EASY', 'HARD', 'EXPERT'],
+            choices: ['EASY-EUROPE', 'EASY', 'HARD', 'EXPERT'],
         },
     ]);
     return difficulty;
 };
 
-let sessionCookie = '';
 
 const startGame = async (difficulty) => {
     try {
@@ -55,7 +54,7 @@ const getSessionData = async () => {
     try {
         const response = await axiosInstance.get('/session-data', {
             headers: {
-                Cookie: sessionCookie // Attach the stored cookie
+                Cookie: sessionCookie 
             }
         });
         console.log('Session Data:', response.data);
@@ -113,7 +112,7 @@ const main = async () => {
     await guess();
     await guess();
     await guess();
-     
+
 }
 
 main();
