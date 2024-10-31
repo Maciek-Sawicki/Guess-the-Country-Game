@@ -1,5 +1,6 @@
 import express from 'express';
 import * as gameLogic from '../controllers/gameLogic.js'; 
+import chalk from 'chalk';
 
 const router = express.Router();
 
@@ -37,26 +38,22 @@ router.get('/random-country/:difficulty', async (req, res) => {
 router.post('/start-game', async (req, res) => {
     const { difficulty } = req.body;
 
-    if (!['EASY', 'HARD', 'EXPERT'].includes(difficulty)) {
+    if (!['EASY-EUROPE', 'EASY', 'HARD', 'EXPERT'].includes(difficulty)) {
         return res.status(400).json({ error: 'Invalid difficulty level' });
     }
 
-    console.log('Starting game with difficulty:', difficulty);
+    console.log(`${chalk.blue(`Session ID: ${req.sessionID}`)}, ${chalk.green(`Starting game with difficulty: ${difficulty}`)}`);
 
     try {
         const randomCountry = await gameLogic.getRandomCountryByDifficulty(difficulty);
-
         if (!randomCountry)     {
             return res.status(404).json({ error: 'No country found' });
         }
 
-        console.log('Target country: ', randomCountry.name);
+        console.log(`${chalk.blue(`Session ID: ${req.sessionID}`)}, ${chalk.green(`Target country: ${randomCountry.name}`)}`);
 
         req.session.targetCountry = randomCountry;
         req.session.attempts = 0; 
-
-        console.log('Session after starting game:', req.session);
-
         req.session.save(err => {
             if (err) console.error('Session save error:', err);
             res.json({
@@ -67,7 +64,6 @@ router.post('/start-game', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('Error starting game:', error);
         res.status(500).json({ error: 'Failed to start game' });
     }
 });
@@ -76,7 +72,6 @@ router.get('/session-data', (req, res) => {
     if (!req.session.targetCountry || typeof req.session.attempts === 'undefined') {
         return res.status(404).json({ error: 'Session data not found' });
     }
-
     res.json({
         targetCountry: req.session.targetCountry,
         attempts: req.session.attempts,
@@ -84,17 +79,11 @@ router.get('/session-data', (req, res) => {
 });
 
 router.post('/guess', async (req, res) => {
-
     if (!req.session.targetCountry) {
         return res.status(400).json({ error: 'Start game first!' });
     }
-
     const targetCountry = req.session.targetCountry;
     const { userGuess } = req.body;
-
-    console.log(req.session);
-
-
 
     try {
         if (!req.session.attempts) {
@@ -108,11 +97,12 @@ router.post('/guess', async (req, res) => {
             return null; 
         }
 
-        console.log("User guess: ", fullCountryData);
+        console.log(`${chalk.blue(`Session ID: ${req.sessionID}`)}, ${chalk.green(`User guess: ${fullCountryData.name}`)}`);
 
         const isCorrect = gameLogic.checkGuess(fullCountryData, targetCountry);
 
         if (isCorrect) {
+            console.log(`${chalk.blue(`Session ID: ${req.sessionID}`)}, ${chalk.green(`Game won! Correct country is ${targetCountry.name}`)}`);
             return res.json({
                 message: `You won Boss! Correct country is ${targetCountry.name}`,
                 attempts: req.session.attempts 
@@ -122,7 +112,6 @@ router.post('/guess', async (req, res) => {
             return res.json({ feedback, attempts: req.session.attempts });
         }
     } catch (error) {
-        console.error('Error while checking the answer:', error);
         return res.status(500).json({ error: 'Error while checking the answer' });
     }    
 });
@@ -134,16 +123,6 @@ router.post('/restart-game', (req, res) => {
         res.json({ message: 'Game restarted' });
     } catch (error) {
         res.status(500).json({ error: 'Error while restarting the game' });
-    }
-});
-
-router.post('/feedback', async (req, res) => {
-    const { userGuess, targetCountry } = req.body;
-    try {
-        const feedback = gameLogic.getFeedback(userGuess, targetCountry);
-        res.json(feedback);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to get feedback' });
     }
 });
 
