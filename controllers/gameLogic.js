@@ -42,6 +42,8 @@ export const getRandomCountryByDifficulty = async (difficulty) => {
     let filteredCountries = [];
     if (difficulty === 'EASY') {
         filteredCountries = countries.filter(country => (country.population > populationTreshold && country.unMember === true));
+    } else if (difficulty === 'EASY-EUROPE') {
+        filteredCountries = countries.filter(country => country.continent === "Europe");
     } else if (difficulty === 'HARD') {
         filteredCountries = countries.filter(country => country.unMember === true);
     } else if (difficulty === 'EXPERT') {   
@@ -59,7 +61,7 @@ export const comparePopulation = (userGuess, targetCountry) => {
     const populationDiff = Math.abs(targetCountry.population - userGuess.population);
 
     if (populationDiff < 1000000) {
-        return 'EQUAL';
+        return 'SIMILAR';
     } else if (userGuess.population < targetCountry.population) {
         return 'GREATER';
     } else {
@@ -79,7 +81,7 @@ export const compareArea = (userGuess, targetCountry) => {
     const areaDiff = Math.abs(targetCountry.area - userGuess.area);
 
     if (areaDiff < 50000) {
-        return 'EQUAL';
+        return 'SIMILAR';
     } else if (userGuess.area < targetCountry.area) {
         return 'GREATER';
     } else {
@@ -130,7 +132,7 @@ export const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 export const compareDistance = (userGuess, targetCountry) => {
     const distance = calculateDistance(userGuess.latitude, userGuess.longitude, targetCountry.latitude, targetCountry.longitude);
-    return { distance };
+    return distance;
 };
 
 export const getFeedback = (userGuess, targetCountry) => {
