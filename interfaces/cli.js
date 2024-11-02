@@ -18,7 +18,7 @@ const displayTitle = () => {
         width: terminalWidth,
         whitespaceBreak: true, 
     });
-    console.log(chalk.blue(title));
+    console.log(chalk.blue.italic(title));
 };
 
 const chooseDifficulty = async () => {
@@ -84,17 +84,22 @@ const makeGuess = async () => {
 
         if (data.message) {
             console.log(chalk.green.bold(`${data.message} 🎉`));
-            console.log(chalk.green(`Attempts: ${data.attempts}`));
+            console.log(chalk.green.bold(`Attempts: ${data.attempts}`));
             return true; 
         } 
         else if (data.feedback) {
             const { population, area, continent, location, distance } = data.feedback;
+
+            const latitudeHint = location.latitudeHint === 'SAME_LATITUDE' ? '' : `Move ${chalk.blue.bold(location.latitudeHint)}`;
+            const longitudeHint = location.longitudeHint === 'SAME_LONGITUDE' ? '' : `Move ${chalk.blue.bold(location.longitudeHint)}`;
+            const combinedHint = [latitudeHint, longitudeHint].filter(Boolean).join(' and ');
+
             const feedbackData = [
-                ['Population', `Target country population is ${population.toUpperCase()} than Poland's population.`],
-                ['Area', `Target country area is ${area} compared to Poland's area.`],
-                ['Continent', continent === 'MATCH' ? 'Correct' : 'Incorrect'],
-                ['Location Hint', `Move ${location.latitudeHint} and ${location.longitudeHint}.`],
-                ['Distance', `Distance from target country: ${distance.toFixed(2)} km.`],
+                ['Population', `Target country population is ${chalk.blue.bold(population.toUpperCase())} than ${userGuess}'s population.`],
+                ['Area', `Target country area is ${chalk.blue.bold(area)} compared to ${userGuess}'s area.`],
+                ['Continent', continent === 'MATCH' ? chalk.green.bold('Correct') : chalk.red.bold('Incorrect')],
+                ['Location Hint', combinedHint ? combinedHint : chalk.blue.bold('Same location')],
+                ['Distance', `Distance from target country: ${chalk.blue.bold(distance.toFixed())} km.`],
             ];
             const output = table(feedbackData);
 
@@ -108,50 +113,28 @@ const makeGuess = async () => {
     return false;
 };
 
-
-
-const main = async () => {  
-    // displayTitle();
-
-
-    // const difficulty = await chooseDifficulty();
-    // const targetCountry = await startGame(difficulty);
+const main = async () => {
+    displayTitle(); 
     
-    // // Wait for a moment to ensure that the session is properly established
-    // //await new Promise(resolve => setTimeout(resolve, 100)); // optional delay
-
-    // // Now get the session data
-    // //await getSessionData();
-
-    //    // Wait for a moment to ensure that the session is properly established
-    //    //await new Promise(resolve => setTimeout(resolve, 100)); // optional delay
-    // await guess();
-    // await guess();
-    // await guess();
-
-    displayTitle(); // Display game title
-    
-    let gameWon = false;
-
     while (true) {
         const difficulty = await chooseDifficulty();
         await startGame(difficulty);
         
+        let gameWon = false; 
+
         while (!gameWon) {
             const result = await makeGuess();
 
             if (result === 'restart') {
-                gameWon = false; // Reset gameWon to continue the outer loop
                 console.log(chalk.blue('Game has been restarted.'));
-                break; // Exit inner loop to restart the game
+                break;
             }
 
             if (result) {
-                gameWon = true; // Set gameWon to true if guessed correctly
+                gameWon = true; 
             }
         }
     }
-
 };
-
 main();
+
