@@ -16,6 +16,7 @@ const axiosInstance = axios.create({
 const displayTitle = () => {
     const terminalWidth = process.stdout.columns || 80; 
     const title = figlet.textSync("Guess the Country Game", {
+        font: 'Slant',
         width: terminalWidth,
         whitespaceBreak: true, 
     });
