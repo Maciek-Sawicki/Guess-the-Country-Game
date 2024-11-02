@@ -52,6 +52,22 @@ export const getRandomCountryByDifficulty = async (difficulty) => {
     return filteredCountries[Math.floor(Math.random() * filteredCountries.length)];
 };
 
+export const getCountriesByDifficulty = async (difficulty) => {
+    const countries = await getCountries();
+
+    let filteredCountries = [];
+    if (difficulty === 'EASY') {
+        filteredCountries = countries.filter(country => (country.population > populationTreshold && country.unMember === true));
+    } else if (difficulty === 'EASY-EUROPE') {
+        filteredCountries = countries.filter(country => country.continent === "Europe");
+    } else if (difficulty === 'HARD') {
+        filteredCountries = countries.filter(country => country.unMember === true);
+    } else if (difficulty === 'EXPERT') {   
+        filteredCountries = countries;
+    }
+    return filteredCountries;
+};
+
 export const checkGuess = (userGuess, targetCountry) => {
     return userGuess.name.toLowerCase() === targetCountry.name.toLowerCase();
 };
@@ -65,7 +81,7 @@ export const comparePopulation = (userGuess, targetCountry) => {
     } else if (userGuess.population < targetCountry.population) {
         return 'GREATER';
     } else {
-        return "LESS";
+        return "LOWER";
     }
 };
 
@@ -85,7 +101,7 @@ export const compareArea = (userGuess, targetCountry) => {
     } else if (userGuess.area < targetCountry.area) {
         return 'GREATER';
     } else {
-        return "LESS";
+        return "LOWER";
     }
 };
 
