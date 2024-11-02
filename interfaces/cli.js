@@ -101,7 +101,7 @@ const makeGuess = async () => {
         }
 
         // Check if the guess is valid or suggest similar countries
-        const bestMatch = stringSimilarity.findBestMatch(userGuess, countryListLowerCase).bestMatch;
+        const bestMatch = stringSimilarity.findBestMatch(userGuess.toLowerCase(), countryListLowerCase).bestMatch;
 
         if (bestMatch.rating >= 0.7 && bestMatch.target.toLowerCase() !== userGuess.toLowerCase()) {
             const originalCountry = originalCountryList[countryListLowerCase.indexOf(bestMatch.target)];
