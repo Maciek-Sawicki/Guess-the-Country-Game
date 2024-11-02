@@ -35,6 +35,17 @@ router.get('/random-country/:difficulty', async (req, res) => {
     }
 });
 
+router.get('/countries/:difficulty', async (req, res) => {
+    const difficulty = req.params.difficulty.toUpperCase();
+    try {
+        const countries = await gameLogic.getCountriesByDifficulty(difficulty);
+        res.json(countries);
+    } catch (error) {
+        console.error(`Error getting countries with difficulty ${difficulty}:`, error);
+        res.status(500).json({ error: `Failed to countries with difficulty ${difficulty}` });
+    }
+});
+
 router.post('/start-game', async (req, res) => {
     const { difficulty } = req.body;
 
