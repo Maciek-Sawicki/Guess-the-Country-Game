@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const populationTreshold = 100000000;
+const populationTreshold = 50000000;
 let countriesCache = null
 
 export const getCountries = async () => {
@@ -43,7 +43,7 @@ export const getRandomCountryByDifficulty = async (difficulty) => {
     if (difficulty === 'EASY') {
         filteredCountries = countries.filter(country => (country.population > populationTreshold && country.unMember === true));
     } else if (difficulty === 'EASY-EUROPE') {
-        filteredCountries = countries.filter(country => country.continent === "Europe");
+        filteredCountries = countries.filter(country => country.continent === "Europe" && country.unMember === true);
     } else if (difficulty === 'HARD') {
         filteredCountries = countries.filter(country => country.unMember === true);
     } else if (difficulty === 'EXPERT') {   
@@ -59,7 +59,7 @@ export const getCountriesByDifficulty = async (difficulty) => {
     if (difficulty === 'EASY') {
         filteredCountries = countries.filter(country => (country.population > populationTreshold && country.unMember === true));
     } else if (difficulty === 'EASY-EUROPE') {
-        filteredCountries = countries.filter(country => country.continent === "Europe");
+        filteredCountries = countries.filter(country => country.continent === "Europe" && country.unMember === true);
     } else if (difficulty === 'HARD') {
         filteredCountries = countries.filter(country => country.unMember === true);
     } else if (difficulty === 'EXPERT') {   
@@ -109,7 +109,7 @@ export const compareLocation = (userGuess, targetCountry) => {
     const latitudeDiff = targetCountry.latitude - userGuess.latitude;
     const longitudeDiff = targetCountry.longitude - userGuess.longitude;
 
-    const tolerance = 2; // tolerance ±2° 
+    const tolerance = 5; // tolerance ±5° 
 
     let latitudeHint = '';
     let longitudeHint = '';
