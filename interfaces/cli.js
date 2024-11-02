@@ -2,6 +2,7 @@ import inquirer from 'inquirer';
 import axios from 'axios';
 import chalk from 'chalk';
 import figlet from 'figlet';
+import { table } from 'table';
 
 const apiUrl = 'http://localhost:3000/api';
 let sessionCookie = '';
@@ -11,16 +12,14 @@ const axiosInstance = axios.create({
     withCredentials: true, 
 });
 
-// axiosInstance.interceptors.request.use(request => {
-//     console.log('Starting Request', request);
-//     return request;
-// });
-
-// axiosInstance.interceptors.response.use(response => {
-//     console.log('Response:', response);
-//     return response;
-// });
-
+const displayTitle = () => {
+    const terminalWidth = process.stdout.columns || 80; 
+    const title = figlet.textSync("Guess the Country Game", {
+        width: terminalWidth,
+        whitespaceBreak: true, 
+    });
+    console.log(chalk.blue(title));
+};
 
 const chooseDifficulty = async () => {
     const { difficulty } = await inquirer.prompt([
@@ -34,17 +33,14 @@ const chooseDifficulty = async () => {
     return difficulty;
 };
 
-
 const startGame = async (difficulty) => {
     try {
         const response = await axiosInstance.post('/start-game', { difficulty });
-        console.log('Start Game Response:', response.data);
+        sessionCookie = response.headers['set-cookie'][0]; 
 
-        // Store the session cookie for future requests
-        sessionCookie = response.headers['set-cookie'][0]; // Get the first cookie
-        //console.log('Set-Cookie:', sessionCookie);
-
-        //return response.data.targetCountry;
+        console.log('Game started! Try to guess the country.');
+        console.log('Type "restart" to start over, "exit" to quit)');
+        console.log();
     } catch (error) {
         console.error('Error starting game:', error.response?.data?.error || error.message);
     }
@@ -63,8 +59,7 @@ const getSessionData = async () => {
     }
 };
 
-
-const guess = async (targetCountry) => {
+const makeGuess = async () => {
     const { userGuess } = await inquirer.prompt([
         {
             type: 'input',
@@ -73,46 +68,90 @@ const guess = async (targetCountry) => {
         },
     ]);
 
-    console.log('User guess before sending:', userGuess);
-
-    console.log(targetCountry);
-
+    if (userGuess.toLowerCase() === 'exit') {
+        console.log(chalk.blue('Exiting the game. Goodbye!'));
+        process.exit(0);
+    } else if (userGuess.toLowerCase() === 'restart') {
+        return 'restart'; 
+    }
 
     try {
-        const { data } = await axiosInstance.post(`${apiUrl}/guess`, { userGuess },
-        {
-            // headers: {
-            //     'Content-Type': 'application/json' // Ustawienie Content-Type
-            // }
+        const { data } = await axiosInstance.post(`${apiUrl}/guess`, { userGuess }, {
             headers: {
-                Cookie: sessionCookie // Attach the stored cookie
-            }
+                Cookie: sessionCookie,
+            },
         });
-        console.log('Response data from server:', data);
-        return data;
+
+        if (data.message) {
+            console.log(chalk.green.bold(`${data.message} 🎉`));
+            console.log(chalk.green(`Attempts: ${data.attempts}`));
+            return true; 
+        } 
+        else if (data.feedback) {
+            const { population, area, continent, location, distance } = data.feedback;
+            const feedbackData = [
+                ['Population', `Target country population is ${population.toUpperCase()} than Poland's population.`],
+                ['Area', `Target country area is ${area} compared to Poland's area.`],
+                ['Continent', continent === 'MATCH' ? 'Correct' : 'Incorrect'],
+                ['Location Hint', `Move ${location.latitudeHint} and ${location.longitudeHint}.`],
+                ['Distance', `Distance from target country: ${distance.toFixed(2)} km.`],
+            ];
+            const output = table(feedbackData);
+
+            console.log(chalk.yellow.bold(`\nHint after guess #${data.attempts}:`));
+            console.log(output);
+        }
+    } catch (error) {
+        console.error(chalk.red('Error making guess:'), error.response?.data?.error || error.message);
     }
 
-    catch (error) {
-        console.error('Error making guess:', error.response.data.error);
-    }
-}
+    return false;
+};
+
+
 
 const main = async () => {  
-    const difficulty = await chooseDifficulty();
-    const targetCountry = await startGame(difficulty);
+    // displayTitle();
+
+
+    // const difficulty = await chooseDifficulty();
+    // const targetCountry = await startGame(difficulty);
     
-    // Wait for a moment to ensure that the session is properly established
-    await new Promise(resolve => setTimeout(resolve, 100)); // optional delay
+    // // Wait for a moment to ensure that the session is properly established
+    // //await new Promise(resolve => setTimeout(resolve, 100)); // optional delay
 
-    // Now get the session data
-    await getSessionData();
+    // // Now get the session data
+    // //await getSessionData();
 
-       // Wait for a moment to ensure that the session is properly established
-       await new Promise(resolve => setTimeout(resolve, 100)); // optional delay
-    await guess();
-    await guess();
-    await guess();
+    //    // Wait for a moment to ensure that the session is properly established
+    //    //await new Promise(resolve => setTimeout(resolve, 100)); // optional delay
+    // await guess();
+    // await guess();
+    // await guess();
 
-}
+    displayTitle(); // Display game title
+    
+    let gameWon = false;
+
+    while (true) {
+        const difficulty = await chooseDifficulty();
+        await startGame(difficulty);
+        
+        while (!gameWon) {
+            const result = await makeGuess();
+
+            if (result === 'restart') {
+                gameWon = false; // Reset gameWon to continue the outer loop
+                console.log(chalk.blue('Game has been restarted.'));
+                break; // Exit inner loop to restart the game
+            }
+
+            if (result) {
+                gameWon = true; // Set gameWon to true if guessed correctly
+            }
+        }
+    }
+
+};
 
 main();
