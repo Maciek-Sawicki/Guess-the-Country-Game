@@ -138,15 +138,15 @@ const processGuess = async (userGuess) => {
             console.log(chalk.blue(`Attempts: ${data.attempts}`));
             return true;
         } else if (data.feedback) {
-            const { population, area, continent, location, distance } = data.feedback;
+            const { populationHint, population, areaHint, area, continent, location, distance } = data.feedback;
 
             const latitudeHint = location.latitudeHint === 'SAME_LATITUDE' ? '' : `Move ${chalk.blue.bold(location.latitudeHint)}`;
             const longitudeHint = location.longitudeHint === 'SAME_LONGITUDE' ? '' : `Move ${chalk.blue.bold(location.longitudeHint)}`;
             const combinedHint = [latitudeHint, longitudeHint].filter(Boolean).join(' and ');
 
             const feedbackData = [
-                ['Population', `Target country population is ${chalk.blue.bold(population.toUpperCase())} than ${userGuess}'s population.`],
-                ['Area', `Target country area is ${chalk.blue.bold(area)} compared to ${userGuess}'s area.`],
+                ['Population', `Target country's population is ${chalk.blue.bold(populationHint)} than ${userGuess}. ${userGuess}: ${chalk.blue.bold(population.toLocaleString())}`],
+                ['Area', `Target country's area is ${chalk.blue.bold(areaHint)} than ${userGuess}. ${userGuess}: ${chalk.blue.bold(area)} km²`],
                 ['Continent', continent === 'MATCH' ? chalk.green.bold('Correct') : chalk.red.bold('Incorrect')],
                 ['Location Hint', combinedHint ? combinedHint : chalk.blue.bold('Same location')],
                 ['Distance', `Distance from target country: ${chalk.blue.bold(distance.toFixed())} km.`],

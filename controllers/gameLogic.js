@@ -152,14 +152,19 @@ export const compareDistance = (userGuess, targetCountry) => {
 };
 
 export const getFeedback = (userGuess, targetCountry) => {
-    const population = comparePopulation(userGuess, targetCountry);
-    const area = compareArea(userGuess, targetCountry);
+    const populationHint = comparePopulation(userGuess, targetCountry);
+    const areaHint = compareArea(userGuess, targetCountry);
+    const population = userGuess.population;
+    const area = userGuess.area;
     const continent = compareContinent(userGuess, targetCountry);
     const location = compareLocation(userGuess, targetCountry);
     const distance = compareDistance(userGuess, targetCountry);
 
+
     const feedback = {
+        populationHint,
         population,
+        areaHint,
         area,
         continent,
         location,
