@@ -5,7 +5,7 @@
 1. A console-based interactive interface.
 2. A graphical web interface.
 
-The game retrieves country data using a REST API and provides feedback about the player's guess.
+The game retrieves country  data using a REST API and provides feedback about the player's guess.
 
 ## Technologies
 
