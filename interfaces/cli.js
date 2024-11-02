@@ -72,7 +72,7 @@ const getSessionData = async () => {
     }
 };
 
-const makeGuess = async (difficulty) => {
+const makeGuess = async () => {
     const countryListData = await fetchCountryList();
 
     if (!Array.isArray(countryListData) || countryListData.length === 0) {
@@ -80,7 +80,8 @@ const makeGuess = async (difficulty) => {
         return false;
     }
 
-    const countryList = countryListData.map(country => country.name);
+    const originalCountryList = countryListData.map(country => country.name);
+    const countryListLowerCase = countryListData.map(country => country.name.toLowerCase());
 
     while (true) {
         const { userGuess } = await inquirer.prompt([
@@ -99,14 +100,15 @@ const makeGuess = async (difficulty) => {
         }
 
         // Check if the guess is valid or suggest similar countries
-        const bestMatch = stringSimilarity.findBestMatch(userGuess, countryList).bestMatch;
+        const bestMatch = stringSimilarity.findBestMatch(userGuess, countryListLowerCase).bestMatch;
 
         if (bestMatch.rating >= 0.7 && bestMatch.target.toLowerCase() !== userGuess.toLowerCase()) {
+            const originalCountry = originalCountryList[countryListLowerCase.indexOf(bestMatch.target)];
             const { confirmSuggestion } = await inquirer.prompt([
                 {
                     type: 'confirm',
                     name: 'confirmSuggestion',
-                    message: `Did you mean ${chalk.blue.bold(bestMatch.target)}?`,
+                    message: `Did you mean ${chalk.blue.bold(originalCountry)}?`,
                 },
             ]);
 
@@ -116,7 +118,7 @@ const makeGuess = async (difficulty) => {
                 console.log(chalk.yellowBright('Please try entering the country name again.'));
                 continue;
             }
-        } else if (countryList.includes(userGuess)) {
+        } else if (countryListLowerCase.includes(userGuess.toLowerCase())) {
             return await processGuess(userGuess); // Exact match, proceed with guess
         } else {
             console.log(chalk.red("Country not recognized. Please try again."));
@@ -131,8 +133,8 @@ const processGuess = async (userGuess) => {
         });
 
         if (data.message) {
-            console.log(chalk.green.bold(`${data.message} 🎉`));
-            console.log(chalk.green.bold(`Attempts: ${data.attempts}`));
+            console.log(`${chalk.blue('You won Boss! Correct country is')} ${chalk.bgGreen.bold(`${data.message}`)} 🎉`);
+            console.log(chalk.blue(`Attempts: ${data.attempts}`));
             return true;
         } else if (data.feedback) {
             const { population, area, continent, location, distance } = data.feedback;

@@ -115,7 +115,7 @@ router.post('/guess', async (req, res) => {
         if (isCorrect) {
             console.log(`${chalk.blue(`Session ID: ${req.sessionID}`)}, ${chalk.green(`Game won! Correct country is ${targetCountry.name}`)}`);
             return res.json({
-                message: `You won Boss! Correct country is ${targetCountry.name}`,
+                message: targetCountry.name,
                 attempts: req.session.attempts 
             });
         } else {
