@@ -19,13 +19,15 @@ To run the project locally, follow these steps:
    ```bash
    git clone https://github.com/Maciek-Sawicki/Guess-the-Country-Game
    cd guess-the-country-game
+   ```
+2. **Install the dependencies**
+   ```bash
    npm install
    ```
-2. **Start the server**
+3. **Start the server**
     ```bash
-    node server.js
+    npm start
     ```
-
 3. **Start the CLI game interface:**
 Open another terminal and run:
     ```bash
