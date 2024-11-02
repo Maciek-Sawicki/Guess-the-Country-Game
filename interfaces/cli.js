@@ -3,6 +3,7 @@ import axios from 'axios';
 import chalk from 'chalk';
 import figlet from 'figlet';
 import { table } from 'table';
+import stringSimilarity from 'string-similarity';
 
 const apiUrl = 'http://localhost:3000/api';
 let sessionCookie = '';
@@ -33,13 +34,25 @@ const chooseDifficulty = async () => {
     return difficulty;
 };
 
+const fetchCountryList = async () => {
+    try {
+        const response = await axios.get(`${apiUrl}/countries`, {
+            headers: { Cookie: sessionCookie }
+        });
+        return response.data; 
+    } catch (error) {
+        console.error(chalk.red('Error fetching country list:', error.response?.data?.error || error.message));
+        return [];
+    }
+};
+
 const startGame = async (difficulty) => {
     try {
         const response = await axiosInstance.post('/start-game', { difficulty });
         sessionCookie = response.headers['set-cookie'][0]; 
 
-        console.log('Game started! Try to guess the country.');
-        console.log('Type "restart" to start over, "exit" to quit)');
+        console.log(chalk.blue('Game started! Try to guess the country.'));
+        console.log(`Type ${chalk.blue("restart")} to start over, ${chalk.blue("exit")} to quit)`);
         console.log();
     } catch (error) {
         console.error('Error starting game:', error.response?.data?.error || error.message);
@@ -59,35 +72,69 @@ const getSessionData = async () => {
     }
 };
 
-const makeGuess = async () => {
-    const { userGuess } = await inquirer.prompt([
-        {
-            type: 'input',
-            name: 'userGuess',
-            message: 'Enter the name of the country:',
-        },
-    ]);
+const makeGuess = async (difficulty) => {
+    const countryListData = await fetchCountryList();
 
-    if (userGuess.toLowerCase() === 'exit') {
-        console.log(chalk.blue('Exiting the game. Goodbye!'));
-        process.exit(0);
-    } else if (userGuess.toLowerCase() === 'restart') {
-        return 'restart'; 
+    if (!Array.isArray(countryListData) || countryListData.length === 0) {
+        console.log(chalk.red("Error: Country list is empty or not loaded correctly."));
+        return false;
     }
 
+    const countryList = countryListData.map(country => country.name);
+
+    while (true) {
+        const { userGuess } = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'userGuess',
+                message: 'Enter the name of the country:',
+            },
+        ]);
+
+        if (userGuess.toLowerCase() === 'exit') {
+            console.log(chalk.blue('Exiting the game. Goodbye!'));
+            process.exit(0);
+        } else if (userGuess.toLowerCase() === 'restart') {
+            return 'restart';
+        }
+
+        // Check if the guess is valid or suggest similar countries
+        const bestMatch = stringSimilarity.findBestMatch(userGuess, countryList).bestMatch;
+
+        if (bestMatch.rating >= 0.7 && bestMatch.target.toLowerCase() !== userGuess.toLowerCase()) {
+            const { confirmSuggestion } = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'confirmSuggestion',
+                    message: `Did you mean ${chalk.blue.bold(bestMatch.target)}?`,
+                },
+            ]);
+
+            if (confirmSuggestion) {
+                return await processGuess(bestMatch.target); // Pass corrected guess
+            } else {
+                console.log(chalk.yellowBright('Please try entering the country name again.'));
+                continue;
+            }
+        } else if (countryList.includes(userGuess)) {
+            return await processGuess(userGuess); // Exact match, proceed with guess
+        } else {
+            console.log(chalk.red("Country not recognized. Please try again."));
+        }
+    }
+};
+
+const processGuess = async (userGuess) => {
     try {
         const { data } = await axiosInstance.post(`${apiUrl}/guess`, { userGuess }, {
-            headers: {
-                Cookie: sessionCookie,
-            },
+            headers: { Cookie: sessionCookie },
         });
 
         if (data.message) {
             console.log(chalk.green.bold(`${data.message} 🎉`));
             console.log(chalk.green.bold(`Attempts: ${data.attempts}`));
-            return true; 
-        } 
-        else if (data.feedback) {
+            return true;
+        } else if (data.feedback) {
             const { population, area, continent, location, distance } = data.feedback;
 
             const latitudeHint = location.latitudeHint === 'SAME_LATITUDE' ? '' : `Move ${chalk.blue.bold(location.latitudeHint)}`;
@@ -123,7 +170,7 @@ const main = async () => {
         let gameWon = false; 
 
         while (!gameWon) {
-            const result = await makeGuess();
+            const result = await makeGuess(); 
 
             if (result === 'restart') {
                 console.log(chalk.blue('Game has been restarted.'));
@@ -136,5 +183,5 @@ const main = async () => {
         }
     }
 };
-main();
 
+main();
