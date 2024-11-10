@@ -47,6 +47,14 @@ const fetchCountryList = async () => {
     }
 };
 
+const isCountryListValid = (countryList) => {
+    if (!Array.isArray(countryList) || countryList.length === 0) {
+        console.log(chalk.red("Error: Country list is empty or not loaded correctly."));
+        return false;
+    }
+    return true;
+};
+
 const startGame = async (difficulty) => {
     try {
         const response = await axiosInstance.post('/start-game', { difficulty });
@@ -73,95 +81,151 @@ const getSessionData = async () => {
     }
 };
 
+const getUserGuess = async () => {
+    const { userGuess } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'userGuess',
+            message: 'Enter the name of the country:',
+        },
+    ]);
+    return userGuess;
+};
+
+const isExitCommand = (guess) => guess === 'exit';
+const isRestartCommand = (guess) => guess === 'restart';
+
+const exitGame = () => {
+    console.log(chalk.blue('Exiting the game. Goodbye!'));
+    process.exit(0);
+};
+
+const findBestMatch = (guess, countryList) => {
+    return stringSimilarity.findBestMatch(guess.toLowerCase(), countryList).bestMatch;
+};
+
+const isCloseMatch = (bestMatch, userGuess) => {
+    return bestMatch.rating >= 0.7 && bestMatch.target.toLowerCase() !== userGuess.toLowerCase();
+};
+
+const isExactMatch = (guess, countryList) => countryList.includes(guess.toLowerCase());
+
+const confirmSuggestion = async (bestMatch, originalCountryList, countryListLowerCase) => {
+    const originalCountry = originalCountryList[countryListLowerCase.indexOf(bestMatch.target)];
+    const { confirmSuggestion } = await inquirer.prompt([
+        {
+            type: 'confirm',
+            name: 'confirmSuggestion',
+            message: `Did you mean ${chalk.blue.bold(originalCountry)}?`,
+        },
+    ]);
+    return confirmSuggestion;
+};
+
 const makeGuess = async () => {
     const countryListData = await fetchCountryList();
-
-    if (!Array.isArray(countryListData) || countryListData.length === 0) {
-        console.log(chalk.red("Error: Country list is empty or not loaded correctly."));
-        return false;
-    }
+    if (!isCountryListValid(countryListData)) return false;
 
     const originalCountryList = countryListData.map(country => country.name);
-    const countryListLowerCase = countryListData.map(country => country.name.toLowerCase());
+    const countryListLowerCase = originalCountryList.map(country => country.toLowerCase());
 
     while (true) {
-        const { userGuess } = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'userGuess',
-                message: 'Enter the name of the country:',
-            },
-        ]);
-
-        if (userGuess.toLowerCase() === 'exit') {
-            console.log(chalk.blue('Exiting the game. Goodbye!'));
-            process.exit(0);
-        } else if (userGuess.toLowerCase() === 'restart') {
+        const userGuess = await getUserGuess();
+        
+        if (isExitCommand(userGuess)) {
+            exitGame();
+        } else if (isRestartCommand(userGuess)) {
             return 'restart';
         }
 
-        // Check if the guess is valid or suggest similar countries
-        const bestMatch = stringSimilarity.findBestMatch(userGuess.toLowerCase(), countryListLowerCase).bestMatch;
+        const bestMatch = findBestMatch(userGuess, countryListLowerCase);
 
-        if (bestMatch.rating >= 0.7 && bestMatch.target.toLowerCase() !== userGuess.toLowerCase()) {
-            const originalCountry = originalCountryList[countryListLowerCase.indexOf(bestMatch.target)];
-            const { confirmSuggestion } = await inquirer.prompt([
-                {
-                    type: 'confirm',
-                    name: 'confirmSuggestion',
-                    message: `Did you mean ${chalk.blue.bold(originalCountry)}?`,
-                },
-            ]);
-
-            if (confirmSuggestion) {
-                return await processGuess(bestMatch.target); // Pass corrected guess
-            } else {
-                console.log(chalk.yellowBright('Please try entering the country name again.'));
-                continue;
+        if (isCloseMatch(bestMatch, userGuess)) {
+            const suggestionConfirmed = await confirmSuggestion(bestMatch, originalCountryList, countryListLowerCase);
+            if (suggestionConfirmed) {
+                return await processGuess(bestMatch.target, originalCountryList);
             }
-        } else if (countryListLowerCase.includes(userGuess.toLowerCase())) {
-            return await processGuess(userGuess); // Exact match, proceed with guess
+            console.log(chalk.yellowBright('Please try entering the country name again.'));
+        } else if (isExactMatch(userGuess, countryListLowerCase)) {
+            return await processGuess(userGuess, originalCountryList);
         } else {
             console.log(chalk.red("Country not recognized. Please try again."));
         }
     }
 };
 
-const processGuess = async (userGuess) => {
+const processGuess = async (userGuess, originalCountryList) => {
     try {
-        const { data } = await axiosInstance.post(`${apiUrl}/guess`, { userGuess }, {
-            headers: { Cookie: sessionCookie },
-        });
+        const { data } = await makeGuessRequest(userGuess);
 
         if (data.message) {
-            console.log(`${chalk.blue('You won Boss! Correct country is')} ${chalk.bgGreen.bold(`${data.message}`)} 🎉`);
-            console.log(chalk.blue(`Attempts: ${data.attempts}`));
+            displayWinningMessage(data.message, data.attempts);
             return true;
         } else if (data.feedback) {
-            const { populationHint, population, areaHint, area, continent, location, distance } = data.feedback;
-
-            const latitudeHint = location.latitudeHint === 'SAME_LATITUDE' ? '' : `Move ${chalk.blue.bold(location.latitudeHint)}`;
-            const longitudeHint = location.longitudeHint === 'SAME_LONGITUDE' ? '' : `Move ${chalk.blue.bold(location.longitudeHint)}`;
-            const combinedHint = [latitudeHint, longitudeHint].filter(Boolean).join(' and ');
-
-            const feedbackData = [
-                ['Population', `Target country's population is ${chalk.blue.bold(populationHint)} than ${userGuess}. ${userGuess}: ${chalk.blue.bold(population.toLocaleString())}`],
-                ['Area', `Target country's area is ${chalk.blue.bold(areaHint)} than ${userGuess}. ${userGuess}: ${chalk.blue.bold(area)} km²`],
-                ['Continent', continent === 'MATCH' ? chalk.green.bold('Correct') : chalk.red.bold('Incorrect')],
-                ['Location Hint', combinedHint ? combinedHint : chalk.blue.bold('Same location')],
-                ['Distance', `Distance from target country: ${chalk.blue.bold(distance.toFixed())} km.`],
-            ];
-            const output = table(feedbackData);
-
-            console.log(chalk.yellow.bold(`\nHint after guess #${data.attempts}:`));
-            console.log(output);
+            displayFeedback(data.feedback, userGuess, data.attempts, originalCountryList);
         }
     } catch (error) {
-        console.error(chalk.red('Error making guess:'), error.response?.data?.error || error.message);
+        handleError(error);
     }
-
     return false;
 };
+
+const makeGuessRequest = async (userGuess) => {
+    return await axiosInstance.post(`${apiUrl}/guess`, { userGuess }, {
+        headers: { Cookie: sessionCookie },
+    });
+};
+
+const displayWinningMessage = (countryName, attempts) => {
+    console.log(`${chalk.blue('You won Boss! Correct country is')} ${chalk.bgGreen.bold(countryName)} 🎉`);
+    console.log(chalk.blue(`Attempts: ${attempts}`));
+};
+
+const displayFeedback = (feedback, userGuess, attempts, originalCountryList) => {
+    const matchingCountry = originalCountryList.find(country => 
+        country.toLowerCase() === userGuess.toLowerCase()
+    );
+    const originalCountryName = matchingCountry ? matchingCountry : 'Country not found';
+
+    const feedbackData = [
+        ['Population', formatPopulationHint(feedback.populationHint, feedback.population, originalCountryName)],
+        ['Area', formatAreaHint(feedback.areaHint, feedback.area, originalCountryName)],
+        ['Continent', formatContinentHint(feedback.continent)],
+        ['Location Hint', formatLocationHint(feedback.location)],
+        ['Distance', formatDistanceHint(feedback.distance)],
+    ];
+    
+    console.log(chalk.yellow.bold(`\nHint after guess #${attempts}:`));
+    console.log(table(feedbackData));
+};
+
+
+const formatPopulationHint = (populationHint, population, userGuess) => {
+    return `Target country's population is ${chalk.blue.bold(populationHint)} than ${userGuess}. ${userGuess}: ${chalk.blue.bold(population.toLocaleString())}`;
+};
+
+const formatAreaHint = (areaHint, area, userGuess) => {
+    return `Target country's area is ${chalk.blue.bold(areaHint)} than ${userGuess}. ${userGuess}: ${chalk.blue.bold(area.toLocaleString())} km²`;
+};
+
+const formatContinentHint = (continent) => {
+    return continent === 'MATCH' ? chalk.green.bold('Correct') : chalk.red.bold('Incorrect');
+};
+
+const formatLocationHint = (location) => {
+    const latitudeHint = location.latitudeHint === 'SAME_LATITUDE' ? '' : `Move ${chalk.blue.bold(location.latitudeHint)}`;
+    const longitudeHint = location.longitudeHint === 'SAME_LONGITUDE' ? '' : `Move ${chalk.blue.bold(location.longitudeHint)}`;
+    return [latitudeHint, longitudeHint].filter(Boolean).join(' and ') || chalk.blue.bold('Same location');
+};
+
+const formatDistanceHint = (distance) => {
+    return `Distance from target country: ${chalk.blue.bold(distance.toFixed())} km.`;
+};
+
+const handleError = (error) => {
+    console.error(chalk.red('Error making guess:'), error.response?.data?.error || error.message);
+};
+
 
 const main = async () => {
     displayTitle(); 
