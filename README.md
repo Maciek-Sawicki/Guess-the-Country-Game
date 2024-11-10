@@ -40,7 +40,7 @@ Open another terminal and run:
 2. **Selecting Difficulty**:
    - **EASY-EUROPE**: Easy level, with European countries only.
    - **EASY**: Easy level, with all countries having a large population.
-   - **HARD**: Medium difficulty, including all UN member countries.
+   - **HARD**: Hard difficulty, including all UN member countries.
    - **EXPERT**: Hard difficulty, including all countries and dependent territories.
 3. **Gameplay**: Start guessing the country name based on hints provided by the game.
 
