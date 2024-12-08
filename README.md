@@ -31,7 +31,7 @@ To run the project locally, follow these steps:
 3. **Start the CLI game interface:**
 Open another terminal and run:
     ```bash
-    node interfaces/cli.js
+    node cli.js
     ```
 
 ## Usage
