@@ -1,9 +1,12 @@
 import axios from 'axios';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
+const countriesData = require('../all.json');
 const populationTreshold = 50000000;
 let countriesCache = null
 
-export const getCountries = async () => {
+export const getCountriesApi = async () => {
     if (!countriesCache) {
         try {
             const response = await axios.get('https://restcountries.com/v3.1/all');
@@ -25,6 +28,29 @@ export const getCountries = async () => {
     }
     return countriesCache;
 };
+
+export const getCountries = () => {
+    if (!countriesCache) {
+        try {
+            const countriesRaw = countriesData;
+            const countries = countriesRaw.map((country) => ({
+                name: country.name.common,
+                population: country.population,
+                continent: country.continents[0],
+                area: country.area,
+                latitude: country.latlng[0],
+                longitude: country.latlng[1],
+                unMember: country.unMember
+            }));
+            countriesCache = countries;
+        } catch (error) {
+          console.error('Error fetching data: ', error);
+          throw error;
+        }
+    }
+    return countriesCache;
+};
+
 
 export const getCountryByName = async (countryName) => {
     const countries = await getCountries();

@@ -1,10 +1,17 @@
 import express from 'express'; 
 import session from 'express-session';
 import gameRoutes from './routes/gameRoutes.js';
+import cors from 'cors'; 
+
+const corsOptions = {
+  origin: 'http://localhost:5173', 
+  credentials: true, 
+};
 
 const app = express();
 const port = 3000;
 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(
   session({
